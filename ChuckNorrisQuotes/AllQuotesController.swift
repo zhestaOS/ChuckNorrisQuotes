@@ -9,7 +9,8 @@ import UIKit
 
 class AllQuotesController: UITableViewController {
     
-    var quotes: [Quote]!
+    var quotes = [Quote]()
+    var isCategory: Bool = false
     
     var quotesManager = QuotesManager.shared
 
@@ -18,7 +19,9 @@ class AllQuotesController: UITableViewController {
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        if quotes == nil {
+        if !isCategory {
+            quotesManager.updateQuotes()
+            quotes.removeAll()
             quotes = quotesManager.quotes
         }
         tableView.reloadData()

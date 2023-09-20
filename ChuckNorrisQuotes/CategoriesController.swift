@@ -43,11 +43,12 @@ class CategoriesController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let quotes = categoriesDict[categories[indexPath.row]]
+        guard let quotes = categoriesDict[categories[indexPath.row]] else { return }
         let sb = UIStoryboard(name: "Main", bundle: nil)
         let vc = sb.instantiateViewController(withIdentifier: "AllQuotesController") as! AllQuotesController
         vc.title = categories[indexPath.row]
         vc.quotes = quotes
+        vc.isCategory = true
         navigationController?.pushViewController(vc, animated: true)
     }
 

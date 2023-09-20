@@ -7,6 +7,7 @@
 
 import Foundation
 import RealmSwift
+import KeychainSwift
 
 class QuotesManager {
     
@@ -14,9 +15,24 @@ class QuotesManager {
     
     var quotes: [Quote] = []
     
+    private var encryptionConfig: Realm.Configuration
+    
     private init() {
         let config = Realm.Configuration(schemaVersion: 2)
         Realm.Configuration.defaultConfiguration = config
+        
+        let keychain = KeychainSwift()
+        var key = keychain.getData("key")
+        if key != nil {
+            encryptionConfig = Realm.Configuration(encryptionKey: key)
+        } else {
+            key = Data(count: 64)
+            _ = key?.withUnsafeMutableBytes({ pointer in
+                SecRandomCopyBytes(kSecRandomDefault, 64, pointer.baseAddress!)
+            })
+            encryptionConfig = Realm.Configuration(encryptionKey: key)
+            keychain.set(key!, forKey: "key")
+        }
         
         self.quotes = fetchQuotes()
     }
@@ -69,12 +85,16 @@ class QuotesManager {
     }
     
     private func fetchQuotes() -> [Quote] {
-        let realm = try! Realm()
+        let realm = try! Realm(configuration: encryptionConfig)
         return realm.objects(Quote.self).map{$0}.sorted(by: { $0.downloadAt > $1.downloadAt })
     }
     
+    func updateQuotes() {
+        quotes = fetchQuotes()
+    }
+    
     func addToRealm(quote: Quote) {
-        let realm = try! Realm()
+        let realm = try! Realm(configuration: encryptionConfig)
 
         try! realm.write({
             realm.add(quote)
@@ -84,7 +104,7 @@ class QuotesManager {
     }
     
     func fetchCategorizedQuotes(completion: ([String: [Quote]]) -> Void) {
-        let realm = try! Realm()
+        let realm = try! Realm(configuration: encryptionConfig)
 
         let quotes = realm.objects(Quote.self)
         
